@@ -21,6 +21,11 @@ const ALL_DETECTORS: AnimationDetector[] = [
 
 export function getDetectors(filter?: string[]): AnimationDetector[] {
   if (!filter) return [...ALL_DETECTORS];
+  const validNames = ALL_DETECTORS.map(d => d.name);
+  const unknown = filter.filter(f => !validNames.includes(f));
+  if (unknown.length > 0) {
+    console.error(`[mcp-animation-inspector] Unknown detector names: ${unknown.join(', ')}. Available: ${validNames.join(', ')}`);
+  }
   return ALL_DETECTORS.filter((d) => filter.includes(d.name));
 }
 

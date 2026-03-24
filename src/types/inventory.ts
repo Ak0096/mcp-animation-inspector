@@ -1,16 +1,5 @@
-export interface AnimationInventory {
-  detector: string;
-  triggers: string[];
-  selector: string;
-  properties: string[];
-  triggerDetails: string[];
-  confidence: number;
-}
+import { z } from 'zod';
+import { AnimationInventorySchema, AnimationInfoSchema } from './schemas.js';
 
-export interface AnimationInfo {
-  triggers: string[];
-  selector: string;
-  properties: string[];
-  triggerDetails: string[];
-  confidence: number;
-}
+export type AnimationInventory = z.infer<typeof AnimationInventorySchema>;
+export type AnimationInfo = z.infer<typeof AnimationInfoSchema>;

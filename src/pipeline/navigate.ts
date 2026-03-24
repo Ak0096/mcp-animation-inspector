@@ -1,6 +1,8 @@
 import type { Page } from 'playwright';
 import type { Config } from '../config.js';
 import { dismissCookieBanners } from '../utils/cookies.js';
+import { debug } from '../utils/logger.js';
+import { validateUrl } from '../utils/url-validator.js';
 
 export interface NavigationResult {
   title: string;
@@ -12,10 +14,12 @@ export async function navigateTo(
   url: string,
   config: Config,
 ): Promise<NavigationResult> {
+  validateUrl(url);
   await page.goto(url, {
     waitUntil: config.waitForNetworkIdle ? 'networkidle' : 'domcontentloaded',
     timeout: config.timeout,
   });
+  debug('navigate', 'Loaded URL:', url);
 
   if (config.dismissCookieBanners) {
     await dismissCookieBanners(page);

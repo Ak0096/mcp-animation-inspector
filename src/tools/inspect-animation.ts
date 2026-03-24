@@ -21,6 +21,10 @@ export async function inspectAnimation(
 
   const page = await browserManager.acquirePage();
 
+  abort.signal.addEventListener('abort', () => {
+    page.close().catch(() => {});
+  });
+
   try {
     const pipeline = async (): Promise<InspectionReport> => {
       const { techStack } = await navigateTo(page, url, config);
@@ -32,7 +36,7 @@ export async function inspectAnimation(
       const { scrollFrames, animationFrames } = await captureFrames(page, inventory, config);
       if (abort.signal.aborted) throw new Error('Pipeline timeout exceeded');
 
-      const code = await extractAnimationCode(page, inventory);
+      const { code, errors: extractErrors } = await extractAnimationCode(page, inventory);
       const descriptions = await describeAnimations(animationFrames, code, config);
 
       return buildReport({
@@ -44,7 +48,7 @@ export async function inspectAnimation(
         code,
         descriptions,
         detectorsRun,
-        errors,
+        errors: [...errors, ...extractErrors],
         startTime,
       });
     };

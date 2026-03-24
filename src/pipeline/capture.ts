@@ -2,9 +2,20 @@ import type { Page } from 'playwright';
 import type { Config } from '../config.js';
 import type { AnimationInventory, Frame, FrameSet } from '../types/index.js';
 
+const SCROLL_SETTLE_MS = 150;
+const HOVER_TRANSITION_MS = 400;
+
+function screenshotOpts(config: Config): { type: 'png' | 'jpeg'; quality: number | undefined } {
+  return {
+    type: config.imageFormat === 'png' ? 'png' : 'jpeg',
+    quality: config.imageFormat === 'jpeg' ? config.imageQuality : undefined,
+  };
+}
+
 interface CaptureResult {
   scrollFrames: Frame[];
   animationFrames: FrameSet[];
+  droppedAnimations?: string[];
 }
 
 export async function captureFrames(
@@ -26,14 +37,16 @@ export async function captureFrames(
     const sortedSets = [...animationFrames].sort(
       (a, b) => a.animation.confidence - b.animation.confidence,
     );
+    const dropped: string[] = [];
     while (
       sortedSets.length > 0 &&
       [...scrollFrames, ...sortedSets.flatMap((fs) => fs.frames)]
         .reduce((s, f) => s + f.image.length, 0) > MAX_PAYLOAD
     ) {
-      sortedSets.shift(); // drop lowest confidence
+      const removed = sortedSets.shift();
+      if (removed) dropped.push(removed.animation.selector);
     }
-    return { scrollFrames, animationFrames: sortedSets };
+    return { scrollFrames, animationFrames: sortedSets, droppedAnimations: dropped.length > 0 ? dropped : undefined };
   }
 
   return { scrollFrames, animationFrames };
@@ -54,12 +67,9 @@ async function captureScrollPositions(
       return target;
     }, pct);
 
-    await page.waitForTimeout(150);
+    await page.waitForTimeout(SCROLL_SETTLE_MS);
 
-    const buffer = await page.screenshot({
-      type: config.imageFormat === 'png' ? 'png' : 'jpeg',
-      quality: config.imageFormat === 'jpeg' ? config.imageQuality : undefined,
-    });
+    const buffer = await page.screenshot(screenshotOpts(config));
 
     frames.push({
       image: buffer.toString('base64'),
@@ -125,14 +135,8 @@ async function captureHoverState(
 
     // Before hover
     const beforeBuffer = config.elementCrop
-      ? await locator.screenshot({
-          type: config.imageFormat === 'png' ? 'png' : 'jpeg',
-          quality: config.imageFormat === 'jpeg' ? config.imageQuality : undefined,
-        })
-      : await page.screenshot({
-          type: config.imageFormat === 'png' ? 'png' : 'jpeg',
-          quality: config.imageFormat === 'jpeg' ? config.imageQuality : undefined,
-        });
+      ? await locator.screenshot(screenshotOpts(config))
+      : await page.screenshot(screenshotOpts(config));
 
     frames.push({
       image: beforeBuffer.toString('base64'),
@@ -142,17 +146,11 @@ async function captureHoverState(
 
     // Hover
     await locator.hover();
-    await page.waitForTimeout(400);
+    await page.waitForTimeout(HOVER_TRANSITION_MS);
 
     const afterBuffer = config.elementCrop
-      ? await locator.screenshot({
-          type: config.imageFormat === 'png' ? 'png' : 'jpeg',
-          quality: config.imageFormat === 'jpeg' ? config.imageQuality : undefined,
-        })
-      : await page.screenshot({
-          type: config.imageFormat === 'png' ? 'png' : 'jpeg',
-          quality: config.imageFormat === 'jpeg' ? config.imageQuality : undefined,
-        });
+      ? await locator.screenshot(screenshotOpts(config))
+      : await page.screenshot(screenshotOpts(config));
 
     frames.push({
       image: afterBuffer.toString('base64'),
@@ -179,10 +177,7 @@ async function captureElementCrop(
     const locator = page.locator(anim.selector).first();
     if (!(await locator.isVisible({ timeout: 1000 }))) return null;
 
-    const buffer = await locator.screenshot({
-      type: config.imageFormat === 'png' ? 'png' : 'jpeg',
-      quality: config.imageFormat === 'jpeg' ? config.imageQuality : undefined,
-    });
+    const buffer = await locator.screenshot(screenshotOpts(config));
 
     return {
       image: buffer.toString('base64'),

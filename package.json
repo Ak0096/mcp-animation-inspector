@@ -26,6 +26,15 @@
     "claude"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Ak0096/mcp-animation-inspector.git"
+  },
+  "homepage": "https://github.com/Ak0096/mcp-animation-inspector#readme",
+  "bugs": {
+    "url": "https://github.com/Ak0096/mcp-animation-inspector/issues"
+  },
+  "author": "Ak0096",
   "engines": {
     "node": ">=20"
   },

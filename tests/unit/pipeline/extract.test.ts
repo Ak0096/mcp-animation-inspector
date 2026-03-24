@@ -31,9 +31,9 @@ describe('extract', () => {
 
     const result = await extractAnimationCode(page, inventory);
 
-    expect(result.length).toBe(1);
-    expect(result[0]!.css).toBeDefined();
-    expect(result[0]!.timing.duration).toBeGreaterThan(0);
+    expect(result.code.length).toBe(1);
+    expect(result.code[0]!.css).toBeDefined();
+    expect(result.code[0]!.timing.duration).toBeGreaterThan(0);
 
     await manager.releasePage(page);
   });

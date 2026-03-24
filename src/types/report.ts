@@ -1,5 +1,5 @@
 import type { AnimationInventory } from './inventory.js';
-import type { FrameSet } from './frames.js';
+import type { Frame, FrameSet } from './frames.js';
 import type { AnimationCode } from './code.js';
 
 export interface PageStructure {
@@ -36,6 +36,7 @@ export interface InspectionReport {
   techStack: string[];
   inventory: AnimationInventory[];
   frames: FrameSet[];
+  scrollFrames?: Frame[];
   code: AnimationCode[];
   descriptions?: string[];
   meta: {

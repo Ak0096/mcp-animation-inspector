@@ -7,13 +7,13 @@ export const webglDetector: AnimationDetector = {
 
   async detect(page: Page): Promise<boolean> {
     return page.evaluate(() => {
+      const win = window as unknown as Record<string, unknown>;
+      if (win.THREE || win.PIXI || win.BABYLON || win.p5) return true;
+
       const canvases = document.querySelectorAll('canvas');
       for (const canvas of canvases) {
-        const gl =
-          canvas.getContext('webgl') ||
-          canvas.getContext('webgl2') ||
-          canvas.getContext('experimental-webgl');
-        if (gl) return true;
+        if (canvas.getAttribute('data-engine')) return true;
+        if (canvas.width > 1 && canvas.height > 1) return true;
       }
       return false;
     });
@@ -21,25 +21,24 @@ export const webglDetector: AnimationDetector = {
 
   async extract(page: Page): Promise<AnimationInfo[]> {
     return page.evaluate(() => {
+      const { buildSelector } = (window as any).__mcp;
+
       const results: AnimationInfo[] = [];
+      const win = window as unknown as Record<string, unknown>;
       const canvases = document.querySelectorAll('canvas');
 
       for (let i = 0; i < canvases.length; i++) {
         const canvas = canvases[i]!;
-        const gl =
-          canvas.getContext('webgl') ||
-          canvas.getContext('webgl2') ||
-          canvas.getContext('experimental-webgl');
-        if (!gl) continue;
+        if (canvas.width <= 1 || canvas.height <= 1) continue;
 
-        const id = canvas.id ? `#${canvas.id}` : '';
-        const cls = canvas.classList?.length
-          ? `.${Array.from(canvas.classList).slice(0, 2).join('.')}`
-          : '';
-        const selector = `canvas${id}${cls}` || `canvas:nth-of-type(${i + 1})`;
+        const base = buildSelector(canvas);
+        const selector = (canvas.id || canvas.classList?.length) ? base : `canvas:nth-of-type(${i + 1})`;
 
-        const isThreeJs = 'THREE' in window;
-        const library = isThreeJs ? 'Three.js' : 'WebGL';
+        let library = 'WebGL';
+        if (win.THREE) library = 'Three.js';
+        else if (win.PIXI) library = 'PixiJS';
+        else if (win.BABYLON) library = 'Babylon.js';
+        else if (win.p5) library = 'p5.js';
 
         results.push({
           triggers: ['load', 'loop'],

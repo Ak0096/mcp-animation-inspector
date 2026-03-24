@@ -32,13 +32,11 @@ export const scrollLibraryDetector: AnimationDetector = {
         });
       }
 
+      const { buildSelector } = (window as any).__mcp;
+
       const scrollElements = document.querySelectorAll('[data-scroll]');
       for (const el of scrollElements) {
-        const id = el.id ? `#${el.id}` : '';
-        const cls = el.classList?.length
-          ? `.${Array.from(el.classList).slice(0, 2).join('.')}`
-          : '';
-        const selector = `${el.tagName.toLowerCase()}${id}${cls}`;
+        const selector = buildSelector(el);
         const speed = el.getAttribute('data-scroll-speed');
 
         results.push({

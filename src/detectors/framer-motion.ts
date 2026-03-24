@@ -17,20 +17,18 @@ export const framerMotionDetector: AnimationDetector = {
 
   async extract(page: Page): Promise<AnimationInfo[]> {
     return page.evaluate(() => {
+      const { buildSelector } = (window as any).__mcp;
+
       const results: AnimationInfo[] = [];
       const elements = document.querySelectorAll(
-        '[data-framer-component-type], [data-motion], [style*="transform"]'
+        '[data-framer-component-type], [data-motion], [data-framer-name]'
       );
 
       for (const el of elements) {
         const rect = el.getBoundingClientRect();
         if (rect.width === 0 || rect.height === 0) continue;
 
-        const id = el.id ? `#${el.id}` : '';
-        const cls = el.classList?.length
-          ? `.${Array.from(el.classList).slice(0, 2).join('.')}`
-          : '';
-        const selector = `${el.tagName.toLowerCase()}${id}${cls}`;
+        const selector = buildSelector(el);
         const isMotion = el.hasAttribute('data-motion');
 
         results.push({

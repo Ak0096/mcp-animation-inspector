@@ -4,6 +4,7 @@ import type { AnimationInventory, AnimationCode } from '../types/index.js';
 import { navigateTo } from '../pipeline/navigate.js';
 import { discoverAnimations } from '../pipeline/discover.js';
 import { extractAnimationCode } from '../pipeline/extract.js';
+import { withPage } from '../utils/with-page.js';
 
 export async function extractAnimationCodeTool(
   url: string,
@@ -11,13 +12,10 @@ export async function extractAnimationCodeTool(
   config: Config,
   inventory?: AnimationInventory[],
 ): Promise<AnimationCode[]> {
-  const page = await browserManager.acquirePage();
-
-  try {
+  return withPage(browserManager, config, 'extract', async (page) => {
     await navigateTo(page, url, config);
     const inv = inventory ?? (await discoverAnimations(page, config));
-    return extractAnimationCode(page, inv);
-  } finally {
-    await browserManager.releasePage(page);
-  }
+    const { code } = await extractAnimationCode(page, inv);
+    return code;
+  });
 }

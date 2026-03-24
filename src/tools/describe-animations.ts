@@ -1,8 +1,8 @@
 import type { Config } from '../config.js';
 import type { BrowserManager } from '../browser.js';
 import type { FrameSet, AnimationCode } from '../types/index.js';
-import { inspectAnimation } from './inspect-animation.js';
 import { describeAnimations } from '../pipeline/describe.js';
+import { withTimeout } from '../utils/with-timeout.js';
 
 export async function describeAnimationsTool(
   input: { url: string } | { frames: FrameSet[]; code: AnimationCode[] },
@@ -16,8 +16,27 @@ export async function describeAnimationsTool(
   const describeConfig = { ...config, autoDescribe: true };
 
   if ('url' in input) {
-    const report = await inspectAnimation(input.url, browserManager, describeConfig);
-    return report.descriptions ?? ['No descriptions generated.'];
+    const page = await browserManager.acquirePage();
+    try {
+      const { navigateTo } = await import('../pipeline/navigate.js');
+      const { discoverAnimations } = await import('../pipeline/discover.js');
+      const { captureFrames } = await import('../pipeline/capture.js');
+      const { extractAnimationCode } = await import('../pipeline/extract.js');
+
+      await withTimeout(
+        () => navigateTo(page, input.url, describeConfig),
+        config.timeout,
+        'describe:navigate',
+      );
+      const inventory = await discoverAnimations(page, describeConfig);
+      const { animationFrames } = await captureFrames(page, inventory, describeConfig);
+      const extractResult = await extractAnimationCode(page, inventory);
+      const code = Array.isArray(extractResult) ? extractResult : extractResult.code;
+      const result = await describeAnimations(animationFrames, code, describeConfig);
+      return result ?? ['No descriptions generated.'];
+    } finally {
+      await browserManager.releasePage(page);
+    }
   }
 
   const result = await describeAnimations(input.frames, input.code, describeConfig);

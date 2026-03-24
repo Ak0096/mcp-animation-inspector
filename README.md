@@ -43,7 +43,7 @@ Add to your `~/.claude.json` or project `.mcp.json`:
 ### Local development
 
 ```bash
-git clone https://github.com/your-org/mcp-animation-inspector
+git clone https://github.com/Ak0096/mcp-animation-inspector
 cd mcp-animation-inspector
 npm install
 npx playwright install chromium

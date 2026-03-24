@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Multi-Library Animation Test</title>
+  <style>
+    @keyframes slideIn {
+      from { transform: translateX(-100px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    .animated-hero {
+      width: 300px;
+      height: 200px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      animation: slideIn 0.8s ease-out forwards;
+    }
+    .hover-card {
+      width: 200px;
+      height: 150px;
+      background: #48bb78;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .hover-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    .scroll-panel {
+      height: 300vh;
+      padding: 50px;
+    }
+    .scroll-box {
+      width: 150px;
+      height: 150px;
+      background: #ed8936;
+      margin: 100px auto;
+    }
+    lottie-player {
+      display: block;
+      width: 200px;
+      height: 200px;
+    }
+  </style>
+</head>
+<body>
+  <!-- CSS animation element -->
+  <div class="animated-hero" id="hero">Hero Section</div>
+
+  <!-- CSS hover transition -->
+  <div class="hover-card">Hover Me</div>
+
+  <!-- Lenis / Locomotive scroll detection marker -->
+  <div data-scroll-container>
+    <div class="scroll-panel">
+      <div class="scroll-box" data-scroll data-scroll-speed="2" id="scroll-box">
+        Scroll Animated Box
+      </div>
+    </div>
+  </div>
+
+  <!-- Lottie player stub element -->
+  <lottie-player
+    src=""
+    background="transparent"
+    speed="1"
+    loop
+    autoplay
+  ></lottie-player>
+
+  <!-- GSAP from CDN (same as gsap-page.html) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <script>
+    if (typeof gsap !== 'undefined') {
+      gsap.registerPlugin(ScrollTrigger);
+      gsap.from('#hero', { opacity: 0, y: 60, duration: 1, delay: 0.2 });
+      gsap.from('#scroll-box', {
+        opacity: 0,
+        x: -80,
+        duration: 0.8,
+        scrollTrigger: { trigger: '#scroll-box', start: 'top 80%' },
+      });
+    }
+  </script>
+</body>
+</html>

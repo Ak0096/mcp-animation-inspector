@@ -30,6 +30,8 @@ export const cursorDetector: AnimationDetector = {
 
   async extract(page: Page): Promise<AnimationInfo[]> {
     return page.evaluate(() => {
+      const { buildSelector } = (window as any).__mcp;
+
       const results: AnimationInfo[] = [];
       const cursorEls = document.querySelectorAll(
         '[class*="cursor" i], [id*="cursor" i]'
@@ -39,11 +41,7 @@ export const cursorDetector: AnimationDetector = {
         const style = window.getComputedStyle(el);
         if (style.position !== 'fixed' && style.position !== 'absolute') continue;
 
-        const id = el.id ? `#${el.id}` : '';
-        const cls = el.classList?.length
-          ? `.${Array.from(el.classList).slice(0, 2).join('.')}`
-          : '';
-        const selector = `${el.tagName.toLowerCase()}${id}${cls}`;
+        const selector = buildSelector(el);
 
         results.push({
           triggers: ['hover'],

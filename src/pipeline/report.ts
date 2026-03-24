@@ -27,25 +27,8 @@ export function buildReport(input: ReportInput): InspectionReport {
     timestamp: new Date().toISOString(),
     techStack: input.techStack,
     inventory: input.inventory,
-    frames: [
-      // Scroll frames as a special "page-scroll" FrameSet
-      ...(input.scrollFrames.length > 0
-        ? [
-            {
-              animation: {
-                detector: 'page',
-                triggers: ['scroll'],
-                selector: 'document',
-                properties: ['scroll-position'],
-                triggerDetails: input.scrollFrames.map((f) => f.label),
-                confidence: 1,
-              },
-              frames: input.scrollFrames,
-            },
-          ]
-        : []),
-      ...input.animationFrames,
-    ],
+    frames: input.animationFrames,
+    scrollFrames: input.scrollFrames.length > 0 ? input.scrollFrames : undefined,
     code: input.code,
     descriptions: input.descriptions,
     meta: {

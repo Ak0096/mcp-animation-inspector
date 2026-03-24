@@ -25,6 +25,8 @@ export const gsapDetector: AnimationDetector = {
         };
       };
 
+      const { buildSelector } = (window as any).__mcp;
+
       const tweens = gsap.globalTimeline.getChildren(true, true, false);
       const results: AnimationInfo[] = [];
 
@@ -33,11 +35,7 @@ export const gsapDetector: AnimationDetector = {
         for (const target of targets) {
           if (!(target instanceof Element)) continue;
 
-          const id = target.id ? `#${target.id}` : '';
-          const cls = target.classList?.length
-            ? `.${Array.from(target.classList).slice(0, 2).join('.')}`
-            : '';
-          const selector = `${target.tagName.toLowerCase()}${id}${cls}`;
+          const selector = buildSelector(target);
 
           const properties = tween.vars
             ? Object.keys(tween.vars).filter(
@@ -63,18 +61,18 @@ export const gsapDetector: AnimationDetector = {
         for (const st of ST.getAll()) {
           if (!st.trigger) continue;
           const el = st.trigger;
-          const id = el.id ? `#${el.id}` : '';
-          const cls = el.classList?.length
-            ? `.${Array.from(el.classList).slice(0, 2).join('.')}`
-            : '';
-          const selector = `${el.tagName.toLowerCase()}${id}${cls}`;
+          const selector = buildSelector(el);
 
           // Check if this selector already added via tween detection
-          if (results.some((r) => r.selector === selector)) {
-            const existing = results.find((r) => r.selector === selector)!;
+          const existingIdx = results.findIndex((r) => r.selector === selector);
+          if (existingIdx !== -1) {
+            const existing = results[existingIdx]!;
             if (!existing.triggers.includes('scroll')) {
-              existing.triggers.push('scroll');
-              existing.triggerDetails.push(`ScrollTrigger: ${st.start}-${st.end}`);
+              results[existingIdx] = {
+                ...existing,
+                triggers: [...existing.triggers, 'scroll'],
+                triggerDetails: [...existing.triggerDetails, `ScrollTrigger: ${st.start}-${st.end}`],
+              };
             }
             continue;
           }
@@ -94,5 +92,47 @@ export const gsapDetector: AnimationDetector = {
 
       return results;
     });
+  },
+
+  async extractCode(page: Page, selector: string) {
+    return page.evaluate((sel: string) => {
+      const win = (window as unknown) as Record<string, unknown>;
+      if (!win.gsap) return undefined;
+      const gsap = win.gsap as {
+        globalTimeline: {
+          getChildren: (
+            nested: boolean,
+            tweens: boolean,
+            timelines: boolean,
+          ) => Array<{
+            targets: () => Element[];
+            duration: () => number;
+            delay: () => number;
+            vars?: Record<string, unknown>;
+          }>;
+        };
+      };
+
+      const el = document.querySelector(sel);
+      if (!el) return undefined;
+
+      const tweens = gsap.globalTimeline.getChildren(true, true, false);
+      for (const tween of tweens) {
+        const targets = tween.targets();
+        if (targets.includes(el)) {
+          const vars = { ...tween.vars };
+          for (const key of Object.keys(vars)) {
+            if (typeof vars[key] === 'function') delete vars[key];
+          }
+          return {
+            library: 'gsap' as const,
+            config: vars,
+            rawSnippet: `gsap.to(${JSON.stringify(sel)}, ${JSON.stringify(vars)})`,
+          };
+        }
+      }
+
+      return undefined;
+    }, selector);
   },
 };

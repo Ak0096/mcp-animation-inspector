@@ -34,6 +34,6 @@ describe('Full Pipeline Integration', () => {
 
     expect(report.inventory).toEqual([]);
     // Should still have scroll frames
-    expect(report.frames.length).toBeGreaterThanOrEqual(1);
+    expect(report.scrollFrames?.length).toBeGreaterThanOrEqual(1);
   });
 });

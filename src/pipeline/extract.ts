@@ -1,22 +1,35 @@
 import type { Page } from 'playwright';
-import type { AnimationInventory, AnimationCode } from '../types/index.js';
+import type { AnimationInventory, AnimationCode, InspectionError } from '../types/index.js';
+import { debug } from '../utils/logger.js';
+import { getDetectorByName } from '../detectors/index.js';
+
+export interface ExtractResult {
+  code: AnimationCode[];
+  errors: InspectionError[];
+}
 
 export async function extractAnimationCode(
   page: Page,
   inventory: AnimationInventory[],
-): Promise<AnimationCode[]> {
+): Promise<ExtractResult> {
   const results: AnimationCode[] = [];
+  const errors: InspectionError[] = [];
 
   for (const anim of inventory) {
     try {
       const code = await extractForAnimation(page, anim);
       if (code) results.push(code);
-    } catch {
-      // Best-effort — skip failed extractions
+    } catch (err) {
+      debug('extract', 'Failed extraction for ' + anim.selector + ': ' + (err instanceof Error ? err.message : String(err)));
+      errors.push({
+        stage: 'extract',
+        selector: anim.selector,
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   }
 
-  return results;
+  return { code: results, errors };
 }
 
 async function extractForAnimation(
@@ -27,6 +40,7 @@ async function extractForAnimation(
     const el = document.querySelector(selector);
     if (!el) return null;
 
+    const { parseDurationMs } = (window as any).__mcp;
     const style = window.getComputedStyle(el);
 
     // CSS data
@@ -73,12 +87,9 @@ async function extractForAnimation(
 
     // Timing data
     const durationStr = style.animationDuration || style.transitionDuration;
-    const durationMs =
-      parseFloat(durationStr) *
-      (durationStr.includes('ms') ? 1 : 1000);
+    const durationMs = parseDurationMs(durationStr);
     const delayStr = style.animationDelay || style.transitionDelay;
-    const delayMs =
-      parseFloat(delayStr) * (delayStr.includes('ms') ? 1 : 1000);
+    const delayMs = parseDurationMs(delayStr);
     const easing =
       style.animationTimingFunction || style.transitionTimingFunction;
     const iterCount = style.animationIterationCount;
@@ -101,10 +112,11 @@ async function extractForAnimation(
 
   if (!extracted) return null;
 
-  // GSAP-specific extraction
+  // Detector-based JS extraction
   let js: AnimationCode['js'] | undefined;
-  if (anim.detector === 'gsap') {
-    js = await extractGsapConfig(page, anim.selector);
+  const detector = getDetectorByName(anim.detector);
+  if (detector?.extractCode) {
+    js = await detector.extractCode(page, anim.selector);
   }
 
   return {
@@ -119,50 +131,4 @@ async function extractForAnimation(
       repeat: extracted.timing.repeat as number | 'infinite' | undefined,
     },
   };
-}
-
-async function extractGsapConfig(
-  page: Page,
-  selector: string,
-): Promise<AnimationCode['js'] | undefined> {
-  return page.evaluate((sel: string) => {
-    const win = (window as unknown) as Record<string, unknown>;
-    if (!win.gsap) return undefined;
-    const gsap = win.gsap as {
-      globalTimeline: {
-        getChildren: (
-          nested: boolean,
-          tweens: boolean,
-          timelines: boolean,
-        ) => Array<{
-          targets: () => Element[];
-          duration: () => number;
-          delay: () => number;
-          vars?: Record<string, unknown>;
-        }>;
-      };
-    };
-
-    const el = document.querySelector(sel);
-    if (!el) return undefined;
-
-    const tweens = gsap.globalTimeline.getChildren(true, true, false);
-    for (const tween of tweens) {
-      const targets = tween.targets();
-      if (targets.includes(el)) {
-        const vars = { ...tween.vars };
-        // Remove callback functions
-        for (const key of Object.keys(vars)) {
-          if (typeof vars[key] === 'function') delete vars[key];
-        }
-        return {
-          library: 'gsap' as const,
-          config: vars,
-          rawSnippet: `gsap.to("${sel}", ${JSON.stringify(vars)})`,
-        };
-      }
-    }
-
-    return undefined;
-  }, selector);
 }

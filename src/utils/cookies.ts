@@ -38,8 +38,12 @@ export async function dismissCookieBanners(page: Page): Promise<void> {
     try {
       const btn = page.locator(selector).first();
       if (await btn.isVisible({ timeout: 300 })) {
+        const urlBefore = page.url();
         await btn.click();
         await page.waitForTimeout(300);
+        if (page.url() !== urlBefore) {
+          await page.goBack({ waitUntil: 'domcontentloaded' }).catch(() => {});
+        }
         return;
       }
     } catch {
