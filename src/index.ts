@@ -17,9 +17,46 @@ async function main() {
   process.on('SIGTERM', shutdown);
 
   if (config.transport === 'http') {
-    // HTTP transport — Task 13
-    console.error(`HTTP transport not yet implemented. Use stdio.`);
-    process.exit(1);
+    const { default: express } = await import('express');
+    const { StreamableHTTPServerTransport } = await import(
+      '@modelcontextprotocol/sdk/server/streamableHttp.js'
+    );
+    const { randomUUID } = await import('node:crypto');
+
+    const app = express();
+    app.use(express.json());
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sessions = new Map<string, InstanceType<typeof StreamableHTTPServerTransport>>();
+
+    app.post('/mcp', async (req, res) => {
+      const sessionId = req.headers['mcp-session-id'] as string | undefined;
+
+      if (sessionId && sessions.has(sessionId)) {
+        const transport = sessions.get(sessionId)!;
+        await transport.handleRequest(req, res, req.body);
+        return;
+      }
+
+      const transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: () => randomUUID(),
+      });
+
+      const sessionServer = createServer(config);
+      await sessionServer.server.connect(transport);
+
+      transport.onclose = () => {
+        sessions.delete(transport.sessionId!);
+      };
+      sessions.set(transport.sessionId!, transport);
+
+      await transport.handleRequest(req, res, req.body);
+    });
+
+    app.listen(config.httpPort, () => {
+      console.error(`mcp-animation-inspector: HTTP server on port ${config.httpPort}`);
+    });
+    return;
   }
 
   const transport = new StdioServerTransport();

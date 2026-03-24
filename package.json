@@ -6,7 +6,9 @@
   "bin": {
     "mcp-animation-inspector": "./dist/index.js"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsx src/index.ts",
@@ -15,11 +17,21 @@
     "lint": "tsc --noEmit",
     "inspector": "npx @modelcontextprotocol/inspector dist/index.js"
   },
-  "keywords": ["mcp", "animation", "playwright", "inspector", "ai", "claude"],
+  "keywords": [
+    "mcp",
+    "animation",
+    "playwright",
+    "inspector",
+    "ai",
+    "claude"
+  ],
   "license": "MIT",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.1",
+    "express": "^5.2.1",
     "playwright": "^1.52.0",
     "zod": "^3.25.0"
   },
@@ -27,10 +39,11 @@
     "@anthropic-ai/sdk": "^0.39.0"
   },
   "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^22.0.0",
     "tsup": "^8.5.0",
     "tsx": "^4.19.0",
     "typescript": "^5.9.0",
-    "vitest": "^3.2.0",
-    "@types/node": "^22.0.0"
+    "vitest": "^3.2.0"
   }
 }
