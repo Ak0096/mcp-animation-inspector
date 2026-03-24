@@ -11,7 +11,7 @@ export const gsapDetector: AnimationDetector = {
 
   async extract(page: Page): Promise<AnimationInfo[]> {
     return page.evaluate(() => {
-      const win = window as Record<string, unknown>;
+      const win = (window as unknown) as Record<string, unknown>;
       if (!win.gsap) return [];
       const gsap = win.gsap as {
         version: string;

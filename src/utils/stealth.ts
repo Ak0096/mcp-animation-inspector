@@ -12,7 +12,7 @@ export async function applyStealthScripts(context: BrowserContext): Promise<void
       get: () => ['en-US', 'en'],
     });
 
-    (window as Record<string, unknown>).chrome = {
+    ((window as unknown) as Record<string, unknown>).chrome = {
       runtime: {},
       loadTimes: () => ({}),
       csi: () => ({}),

@@ -126,7 +126,7 @@ async function extractGsapConfig(
   selector: string,
 ): Promise<AnimationCode['js'] | undefined> {
   return page.evaluate((sel: string) => {
-    const win = window as Record<string, unknown>;
+    const win = (window as unknown) as Record<string, unknown>;
     if (!win.gsap) return undefined;
     const gsap = win.gsap as {
       globalTimeline: {

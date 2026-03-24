@@ -20,7 +20,7 @@ export const scrollLibraryDetector: AnimationDetector = {
   async extract(page: Page): Promise<AnimationInfo[]> {
     return page.evaluate(() => {
       const results: AnimationInfo[] = [];
-      const win = window as Record<string, unknown>;
+      const win = (window as unknown) as Record<string, unknown>;
 
       if ('__lenis' in win || 'lenis' in win) {
         results.push({

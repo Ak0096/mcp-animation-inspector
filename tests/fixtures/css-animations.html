@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>CSS Animation Test</title>
+  <style>
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .animated-box {
+      width: 200px;
+      height: 200px;
+      background: blue;
+      animation: fadeIn 1s ease-in-out;
+    }
+    .hover-box {
+      width: 200px;
+      height: 200px;
+      background: red;
+      transition: transform 0.5s ease;
+    }
+    .hover-box:hover {
+      transform: scale(1.1);
+    }
+    .short-transition {
+      transition: color 0.05s;
+    }
+  </style>
+</head>
+<body>
+  <div class="animated-box">Fade In</div>
+  <div class="hover-box">Hover Me</div>
+  <div class="short-transition">Short (should be filtered)</div>
+</body>
+</html>

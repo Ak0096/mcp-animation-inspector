@@ -43,7 +43,7 @@ export async function navigateTo(
 
 async function detectTechStack(page: Page): Promise<string[]> {
   return page.evaluate(() => {
-    const win = window as Record<string, unknown>;
+    const win = (window as unknown) as Record<string, unknown>;
     const stack: string[] = [];
 
     if (win.gsap) {
