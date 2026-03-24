@@ -15,10 +15,19 @@ export async function navigateTo(
   config: Config,
 ): Promise<NavigationResult> {
   validateUrl(url);
-  await page.goto(url, {
-    waitUntil: config.waitForNetworkIdle ? 'networkidle' : 'domcontentloaded',
-    timeout: config.timeout,
-  });
+  if (config.waitForNetworkIdle) {
+    try {
+      const networkIdleTimeout = Math.floor(config.timeout / 2);
+      await page.goto(url, { waitUntil: 'networkidle', timeout: networkIdleTimeout });
+    } catch (err) {
+      const isTimeout = err instanceof Error && err.message.includes('Timeout');
+      if (!isTimeout) throw err;
+      debug('navigate', 'networkidle timed out, falling back to domcontentloaded');
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: config.timeout });
+    }
+  } else {
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: config.timeout });
+  }
   debug('navigate', 'Loaded URL:', url);
 
   if (config.dismissCookieBanners) {
