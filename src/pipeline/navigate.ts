@@ -1,6 +1,7 @@
 import type { Page } from 'playwright';
 import type { Config } from '../config.js';
 import { dismissCookieBanners } from '../utils/cookies.js';
+import { waitForLoaderDismiss } from '../utils/loader.js';
 import { debug } from '../utils/logger.js';
 import { validateUrl } from '../utils/url-validator.js';
 
@@ -33,6 +34,9 @@ export async function navigateTo(
   if (config.dismissCookieBanners) {
     await dismissCookieBanners(page);
   }
+
+  // Wait for loading overlays / splash screens to dismiss
+  await waitForLoaderDismiss(page);
 
   // CAPTCHA detection — fail fast with clear error
   const hasCaptcha = await page.evaluate(() => {

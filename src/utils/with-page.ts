@@ -11,7 +11,9 @@ export async function withPage<T>(
 ): Promise<T> {
   const page = await browserManager.acquirePage();
   try {
-    return await withTimeout(() => fn(page), config.timeout, label);
+    // Allow extra headroom: navigation fallback + loader dismiss can consume significant time
+    const pageTimeout = Math.floor(config.timeout * 2);
+    return await withTimeout(() => fn(page), pageTimeout, label);
   } finally {
     await browserManager.releasePage(page);
   }
