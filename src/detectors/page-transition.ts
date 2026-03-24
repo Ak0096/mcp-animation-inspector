@@ -7,13 +7,28 @@ export const pageTransitionDetector: AnimationDetector = {
 
   async detect(page: Page): Promise<boolean> {
     return page.evaluate(() => {
-      return (
-        'startViewTransition' in document ||
-        'barba' in window ||
-        'swup' in window ||
-        !!document.querySelector('[data-barba]') ||
-        !!document.querySelector('[data-swup]')
+      const hasBarba =
+        'barba' in window || !!document.querySelector('[data-barba]');
+      const hasSwup =
+        'swup' in window || !!document.querySelector('[data-swup]');
+
+      // Only detect View Transitions API if the page explicitly opts in via CSS
+      // or calls startViewTransition — not just because the browser supports it.
+      const hasViewTransitionCss = Array.from(document.styleSheets).some(
+        (sheet) => {
+          try {
+            return Array.from(sheet.cssRules).some(
+              (rule) =>
+                rule.cssText.includes('@view-transition') ||
+                rule.cssText.includes('view-transition-name'),
+            );
+          } catch {
+            return false;
+          }
+        },
       );
+
+      return hasBarba || hasSwup || hasViewTransitionCss;
     });
   },
 
@@ -21,7 +36,21 @@ export const pageTransitionDetector: AnimationDetector = {
     return page.evaluate(() => {
       const results: AnimationInfo[] = [];
 
-      if ('startViewTransition' in document) {
+      const hasViewTransitionCss = Array.from(document.styleSheets).some(
+        (sheet) => {
+          try {
+            return Array.from(sheet.cssRules).some(
+              (rule) =>
+                rule.cssText.includes('@view-transition') ||
+                rule.cssText.includes('view-transition-name'),
+            );
+          } catch {
+            return false;
+          }
+        },
+      );
+
+      if (hasViewTransitionCss) {
         results.push({
           triggers: ['click'],
           selector: 'document',
