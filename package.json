@@ -4,7 +4,7 @@
   "description": "MCP server that helps AI assistants understand website animations via Playwright, pluggable detectors, and frame capture",
   "type": "module",
   "bin": {
-    "mcp-animation-inspector": "./dist/index.js"
+    "mcp-animation-inspector": "dist/index.js"
   },
   "files": [
     "dist"
@@ -28,7 +28,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Ak0096/mcp-animation-inspector.git"
+    "url": "git+https://github.com/Ak0096/mcp-animation-inspector.git"
   },
   "homepage": "https://github.com/Ak0096/mcp-animation-inspector#readme",
   "bugs": {
