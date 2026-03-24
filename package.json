@@ -1,6 +1,6 @@
 {
   "name": "mcp-animation-inspector",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MCP server that helps AI assistants understand website animations via Playwright, pluggable detectors, and frame capture",
   "type": "module",
   "bin": {

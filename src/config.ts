@@ -36,14 +36,27 @@ const ConfigSchema = z.object({
 
 export type Config = z.infer<typeof ConfigSchema>;
 
-export function parseConfig(overrides: Record<string, unknown>): Config {
-  const withEnv = {
-    ...overrides,
-    anthropicApiKey:
-      overrides.anthropicApiKey ??
-      process.env.ANTHROPIC_API_KEY ??
-      null,
-  };
+/** Map of env-var names → config keys with coercion functions. */
+const ENV_MAP: Record<string, { key: keyof Config; coerce: (v: string) => unknown }> = {
+  timeout:                  { key: 'timeout',                coerce: Number },
+  headless:                 { key: 'headless',               coerce: v => v !== 'false' },
+  imageFormat:              { key: 'imageFormat',             coerce: v => v },
+  imageQuality:             { key: 'imageQuality',            coerce: Number },
+  maxFramesPerAnimation:    { key: 'maxFramesPerAnimation',   coerce: Number },
+  maxTotalFrames:           { key: 'maxTotalFrames',          coerce: Number },
+  transport:                { key: 'transport',               coerce: v => v },
+  httpPort:                 { key: 'httpPort',                coerce: Number },
+  autoDescribe:             { key: 'autoDescribe',            coerce: v => v === 'true' },
+  descriptionModel:         { key: 'descriptionModel',        coerce: v => v },
+  ANTHROPIC_API_KEY:        { key: 'anthropicApiKey',          coerce: v => v },
+};
 
-  return ConfigSchema.parse(withEnv);
+export function parseConfig(overrides: Record<string, unknown>): Config {
+  const fromEnv: Record<string, unknown> = {};
+  for (const [envKey, { key, coerce }] of Object.entries(ENV_MAP)) {
+    const val = process.env[envKey];
+    if (val !== undefined) fromEnv[key] = coerce(val);
+  }
+
+  return ConfigSchema.parse({ ...fromEnv, ...overrides });
 }
