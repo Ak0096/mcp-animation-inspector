@@ -9,6 +9,7 @@ import { captureFramesTool } from './tools/capture-frames.js';
 import { extractAnimationCodeTool } from './tools/extract-animation-code.js';
 import { describeAnimationsTool } from './tools/describe-animations.js';
 import { getPageStructureTool } from './tools/get-page-structure.js';
+import { getPageContentTool } from './tools/get-page-content.js';
 import type { Frame } from './types/index.js';
 import { AnimationInventorySchema } from './types/index.js';
 
@@ -176,6 +177,42 @@ export function createServer(config: Config, sharedBrowser?: BrowserManager): {
         return {
           content: [{ type: 'text', text: JSON.stringify(structure, null, 2) }],
         };
+      } catch (err) {
+        return formatMcpError(err);
+      }
+    },
+  );
+
+  // Tool: get_page_content
+  server.tool(
+    'get_page_content',
+    'Fetch the text and/or HTML content of a webpage. Returns { url, title, html?, text?, meta }. Use format to choose output: "text" (readable content), "html" (raw HTML), or "both". Optionally pass a CSS selector to extract content from a specific element.',
+    {
+      url: z.string().url().describe('URL of the page to fetch'),
+      format: z.enum(['html', 'text', 'both']).default('text').describe('Output format: "text" for readable content, "html" for raw HTML, "both" for both'),
+      selector: z.string().optional().describe('Optional CSS selector to extract content from a specific element'),
+      max_length: z.number().min(1000).max(200000).default(50000).describe('Maximum character length per format (default 50000)'),
+    },
+    async ({ url, format, selector, max_length }) => {
+      try {
+        const result = await getPageContentTool(url, browserManager, config, {
+          format,
+          selector,
+          maxLength: max_length,
+        });
+
+        const parts: { type: 'text'; text: string }[] = [];
+        const header = `Page: ${result.title}\nURL: ${result.url}\nFormat: ${result.format}${result.meta.truncated ? '\n⚠ Content truncated to fit max_length' : ''}`;
+        parts.push({ type: 'text', text: header });
+
+        if (result.text) {
+          parts.push({ type: 'text', text: `--- TEXT CONTENT ---\n${result.text}` });
+        }
+        if (result.html) {
+          parts.push({ type: 'text', text: `--- HTML CONTENT ---\n${result.html}` });
+        }
+
+        return { content: parts };
       } catch (err) {
         return formatMcpError(err);
       }

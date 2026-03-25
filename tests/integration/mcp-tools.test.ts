@@ -3,6 +3,7 @@ import { BrowserManager } from '../../src/browser.js';
 import { parseConfig } from '../../src/config.js';
 import { discoverAnimationsTool } from '../../src/tools/discover-animations.js';
 import { getPageStructureTool } from '../../src/tools/get-page-structure.js';
+import { getPageContentTool } from '../../src/tools/get-page-content.js';
 import { pathToFileURL } from 'url';
 import { resolve } from 'path';
 
@@ -64,5 +65,69 @@ describe('MCP tools integration', () => {
     const structure = await getPageStructureTool(url, manager, config);
 
     expect(structure.title).toBe('Test Page');
+  });
+
+  it('get_page_content returns text content for static page', async () => {
+    manager = new BrowserManager(parseConfig({}));
+    const config = parseConfig({});
+    const url = pathToFileURL(resolve(fixturesDir, 'static-page.html')).href;
+
+    const result = await getPageContentTool(url, manager, config, {
+      format: 'text',
+      maxLength: 50000,
+    });
+
+    expect(result.url).toBe(url);
+    expect(result.title).toBe('Test Page');
+    expect(result.format).toBe('text');
+    expect(typeof result.text).toBe('string');
+    expect(result.text!.length).toBeGreaterThan(0);
+    expect(result.html).toBeUndefined();
+    expect(result.meta.truncated).toBe(false);
+  });
+
+  it('get_page_content returns html content when format is html', async () => {
+    manager = new BrowserManager(parseConfig({}));
+    const config = parseConfig({});
+    const url = pathToFileURL(resolve(fixturesDir, 'static-page.html')).href;
+
+    const result = await getPageContentTool(url, manager, config, {
+      format: 'html',
+      maxLength: 50000,
+    });
+
+    expect(result.format).toBe('html');
+    expect(typeof result.html).toBe('string');
+    expect(result.html).toContain('<');
+    expect(result.text).toBeUndefined();
+  });
+
+  it('get_page_content returns both formats when format is both', async () => {
+    manager = new BrowserManager(parseConfig({}));
+    const config = parseConfig({});
+    const url = pathToFileURL(resolve(fixturesDir, 'static-page.html')).href;
+
+    const result = await getPageContentTool(url, manager, config, {
+      format: 'both',
+      maxLength: 50000,
+    });
+
+    expect(result.format).toBe('both');
+    expect(typeof result.html).toBe('string');
+    expect(typeof result.text).toBe('string');
+  });
+
+  it('get_page_content truncates content when max_length is small', async () => {
+    manager = new BrowserManager(parseConfig({}));
+    const config = parseConfig({});
+    const url = pathToFileURL(resolve(fixturesDir, 'css-animations.html')).href;
+
+    const result = await getPageContentTool(url, manager, config, {
+      format: 'html',
+      maxLength: 100,
+    });
+
+    expect(result.html!.length).toBeLessThanOrEqual(100);
+    expect(result.meta.truncated).toBe(true);
   });
 });
